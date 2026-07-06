@@ -120,6 +120,7 @@ export const taskApi = {
   updateStatus: (id: number, status: string) =>
     axiosClient.patch(`/tasks/${id}/status`, { status }),
   overdue: () => axiosClient.get('/tasks/overdue'),
+  listByAssignee: (email: string) => axiosClient.get(`/tasks/assignee/${encodeURIComponent(email)}`),
 };
 
 // Shipments (Export)
