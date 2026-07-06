@@ -1,0 +1,13 @@
+spring:
+  jpa:
+    show-sql: false
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.tamlezzet: INFO
+    org.springframework.security: WARN
