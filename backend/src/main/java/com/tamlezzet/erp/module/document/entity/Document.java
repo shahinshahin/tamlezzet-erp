@@ -22,7 +22,7 @@ public class Document extends BaseEntity {
     @Column(nullable = false)
     private DocumentCategory category;
 
-    @Column(nullable = false)
+    @Column(name = "s3key", nullable = false)
     private String s3Key;
 
     private String originalFileName;

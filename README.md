@@ -133,3 +133,68 @@ Swagger UI available at: `http://localhost:8080/api/swagger-ui.html`
 
 - **Backend**: Logs to console and `backend/logs/tamlezzet-erp.log`. Level `DEBUG` for app code, `INFO` for Spring/Security.
 - **Frontend**: Color-coded console logs via `src/utils/logger.ts`. Debug logs suppressed in production builds.
+
+---
+
+## Production Deployment (AWS EC2 + Terraform)
+
+### Architecture
+
+```
+Internet → Elastic IP → EC2 t3.micro
+                         ├── Nginx (port 443, SSL via Let's Encrypt)
+                         │    ├── /          → React SPA (Docker)
+                         │    └── /api/      → Spring Boot (Docker)
+                         ├── Spring Boot     (Docker, port 8080 internal)
+                         └── PostgreSQL      (Docker, port 5432 internal)
+```
+
+### Prerequisites
+- [Terraform](https://developer.hashicorp.com/terraform/install) 1.6+
+- AWS CLI configured (`aws configure`)
+- SSH key pair at `~/.ssh/id_rsa`
+- A domain name pointed to your Elastic IP
+
+### Deploy with Terraform
+
+```bash
+cd infra
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your domain, passwords, IP
+
+terraform init
+terraform plan
+terraform apply
+```
+
+Terraform will:
+1. Launch EC2 t3.micro with Amazon Linux 2023
+2. Assign an Elastic IP
+3. Run `user_data.sh` which installs Docker, clones the repo, starts the app, and gets an SSL cert via Certbot
+
+### After Deploy
+
+```bash
+# SSH in
+ssh -i ~/.ssh/id_rsa ec2-user@<elastic-ip>
+
+# View logs
+cd /opt/tamlezzet-erp && docker-compose logs -f
+
+# Redeploy after code changes
+git pull && docker-compose up -d --build
+
+# Destroy infrastructure
+terraform destroy
+```
+
+### Estimated Monthly Cost
+
+| Resource | Cost |
+|---|---|
+| EC2 t3.micro | ~$8/month |
+| Elastic IP (attached) | $0 |
+| EBS 20GB gp3 | ~$1.60/month |
+| Data transfer | ~$1/month |
+| SSL (Let's Encrypt) | Free |
+| **Total** | **~$11/month** |

@@ -1,0 +1,54 @@
+version: '3.9'
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: tamlezzet-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tamlezzet_erp
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d tamlezzet_erp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    image: 975049988558.dkr.ecr.ap-south-1.amazonaws.com/tamlezzet-backend:latest
+    container_name: tamlezzet-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/tamlezzet_erp
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY:-}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-dummy-key-for-local}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      PORT: 8080
+    expose:
+      - "8080"
+    volumes:
+      - backend_logs:/app/logs
+
+  frontend:
+    image: 975049988558.dkr.ecr.ap-south-1.amazonaws.com/tamlezzet-frontend:latest
+    container_name: tamlezzet-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  backend_logs:
